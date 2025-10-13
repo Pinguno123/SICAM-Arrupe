@@ -3,24 +3,37 @@
   "productName": "sistema-clinica",
   "version": "0.1.0",
   "identifier": "com.clinica.padrearrupe",
+
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
   },
+
   "app": {
     "windows": [
       {
         "title": "sistema-clinica",
         "width": 800,
-        "height": 600
+        "height": 600,
+        "devtools": true
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-eval'; connect-src 'self' http://127.0.0.1:8080 http://localhost:8080"
     }
   },
+
+  "plugins": {
+    "http": {
+      "scope": [
+        "http://127.0.0.1:8080/*",
+        "http://localhost:8080/*"
+      ]
+    }
+  },
+
   "bundle": {
     "active": true,
     "targets": "all",

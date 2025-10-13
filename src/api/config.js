@@ -1,4 +1,4 @@
-﻿const DEFAULT_API_BASE_URL = "http://localhost:8080";
+﻿const DEFAULT_API_BASE_URL = "http://127.0.0.1:8080";
 const DEFAULT_API_PREFIX = "api";
 const DEFAULT_AUTH_PREFIX = "auth";
 
@@ -102,15 +102,18 @@ function parseBodyMode(value, fallback = null) {
 }
 
 function resolveEnvBaseUrl() {
-  const value = readEnvValue("VITE_API_BASE_URL");
-  if (value === undefined) {
-    return undefined;
+  const candidates = [readEnvValue("VITE_API_URL"), readEnvValue("VITE_API_BASE_URL")];
+  for (const candidate of candidates) {
+    if (candidate === undefined) {
+      continue;
+    }
+    const trimmed = candidate.trim();
+    if (!trimmed) {
+      return "";
+    }
+    return sanitiseBaseUrl(trimmed);
   }
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return "";
-  }
-  return sanitiseBaseUrl(trimmed);
+  return undefined;
 }
 
 function toBooleanFlag(value, fallback = false) {

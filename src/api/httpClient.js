@@ -141,6 +141,26 @@ function resolveUrl(path) {
   return buildApiUrl(path);
 }
 
+function getAlternateLoopbackUrl(inputUrl) {
+  if (!inputUrl) {
+    return null;
+  }
+  try {
+    const parsed = new URL(inputUrl);
+    if (parsed.hostname === "127.0.0.1") {
+      parsed.hostname = "localhost";
+      return parsed.toString();
+    }
+    if (parsed.hostname === "localhost") {
+      parsed.hostname = "127.0.0.1";
+      return parsed.toString();
+    }
+  } catch (_error) {
+    return null;
+  }
+  return null;
+}
+
 function ensureMethod(value = "GET") {
   return String(value || "GET").toUpperCase();
 }
@@ -194,13 +214,40 @@ async function request(path, options = {}) {
     }
   }
 
-  const response = await fetch(url, {
+  const fetchOptions = {
     method: upperMethod,
     headers: requestHeaders,
     body: requestBody,
     credentials,
     signal,
-  });
+  };
+
+  let response;
+  let currentUrl = url;
+  let attemptedAlternateLoopback = false;
+
+  for (;;) {
+    try {
+      response = await fetch(currentUrl, fetchOptions);
+      break;
+    } catch (networkError) {
+      const fallbackUrl = attemptedAlternateLoopback ? null : getAlternateLoopbackUrl(currentUrl);
+      if (!fallbackUrl) {
+        throw networkError;
+      }
+      attemptedAlternateLoopback = true;
+      currentUrl = fallbackUrl;
+      if (typeof console !== "undefined" && typeof console.warn === "function") {
+        console.warn("[api] Retrying request with alternate loopback host", {
+          originalUrl: url,
+          fallbackUrl,
+          error: networkError?.message ?? networkError,
+        });
+      }
+    }
+  }
+
+  url = currentUrl;
 
   if (auth && !retry && response.status === 401) {
     try {

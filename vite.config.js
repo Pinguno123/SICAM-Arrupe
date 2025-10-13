@@ -4,13 +4,20 @@ import react from "@vitejs/plugin-react";
 const host = process.env.TAURI_DEV_HOST;
 
 function resolveProxyTarget(env) {
-  const candidates = [env.VITE_API_PROXY_TARGET, env.VITE_API_BASE_URL, process.env.VITE_API_PROXY_TARGET, process.env.VITE_API_BASE_URL];
+  const candidates = [
+    env.VITE_API_PROXY_TARGET,
+    env.VITE_API_URL,
+    env.VITE_API_BASE_URL,
+    process.env.VITE_API_PROXY_TARGET,
+    process.env.VITE_API_URL,
+    process.env.VITE_API_BASE_URL,
+  ];
   for (const candidate of candidates) {
     if (typeof candidate === "string" && candidate.trim()) {
       return candidate.trim();
     }
   }
-  return "http://localhost:8080";
+  return "http://127.0.0.1:8080";
 }
 
 function createProxyConfig(target) {
