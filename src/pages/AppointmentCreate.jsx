@@ -2111,6 +2111,18 @@ export default function AppointmentCreate() {
     return toLocalISODate(d);
   })();
 
+  const MIN_1Y = (() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 1);
+    return toLocalISODate(d);
+  })();
+
+  const MAX_1Y = (() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() + 1);
+    return toLocalISODate(d);
+  })();
+
   // Formatear DUI
   const soloNumeros = (v) => v.replace(/\D/g, "").slice(0, 9);
   const formatearDUI = (v) => (v.length <= 8 ? v : `${v.slice(0, 8)}-${v.slice(8)}`);
@@ -2523,7 +2535,7 @@ export default function AppointmentCreate() {
                     </select>
                   </label>
                   <label className="space-y-1 text-sm text-gray-700">
-                    <span>Contrato *{contratoOptions.length > 1 ? " *" : ""}</span>
+                    <span>Contrato{contratoOptions.length > 1 ? " *" : ""}</span>
                     <select
                       name="idContrato"
                       value={appointmentForm.idContrato}
@@ -2611,12 +2623,21 @@ export default function AppointmentCreate() {
                       type="date"
                       name="fecha_referencia"
                       value={appointmentForm.fecha_referencia ?? ""}
-                      onChange={(event) =>
-                        setAppointmentForm((prev) => ({
-                          ...prev,
-                          fecha_referencia: event.target.value,
-                        }))
+                      min={MIN_1Y}
+                      max={TODAY}
+                      onChange={(e) =>
+                        setAppointmentForm((p) => ({ ...p, fecha_referencia: e.target.value }))
                       }
+                      onBlur={(e) => {
+                        const v = e.target.value; if (!v) return;
+                        let nv = v;
+                        if (v > TODAY) nv = TODAY;
+                        if (v < MIN_1Y) nv = MIN_1Y;
+                        if (nv !== v) {
+                          e.target.value = nv;
+                          setAppointmentForm((p) => ({ ...p, fecha_referencia: nv }));
+                        }
+                      }}
                       disabled={appointmentLocked}
                       className="w-full rounded-md border border-gray-200 px-3 py-2 focus:border-gray-400 focus:outline-none"
                       required
@@ -2702,18 +2723,6 @@ export default function AppointmentCreate() {
               <dt className="font-medium">Servicio</dt>
               <dd>{currentCita.servicio_nombre || "-"}</dd>
             </div>
-            <div>
-              <dt className="font-medium">Centro</dt>
-              <dd>{currentCita.centro_nombre || "-"}</dd>
-            </div>
-            <div>
-              <dt className="font-medium">Fecha de turno</dt>
-              <dd>
-                {formatDateForDisplay(
-                  currentCita.turno_fecha ?? currentCita.fecha_referencia,
-                )}
-              </dd>
-            </div>
           </dl>
         )}
       </div>
@@ -2726,19 +2735,29 @@ export default function AppointmentCreate() {
           <form className="space-y-5" onSubmit={handlePhase1Submit}>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <label className="space-y-1 text-sm text-gray-700 md:col-span-2">
-                <span>Fecha programada de entrega</span>
+                <span>Fecha programada de entrega *</span>
                 <input
                   type="date"
                   name="fecha_programada_entrega"
                   value={phase1Form.fecha_programada_entrega ?? ""}
-                  onChange={(event) =>
-                    setPhase1Form((prev) => ({
-                      ...prev,
-                      fecha_programada_entrega: event.target.value,
-                    }))
+                  min={TODAY}
+                  max={MAX_1Y}
+                  onChange={(e) =>
+                    setPhase1Form(p => ({ ...p, fecha_programada_entrega: e.target.value }))
                   }
+                  onBlur={(e) => {
+                    const v = e.target.value; if (!v) return;
+                    let nv = v;
+                    if (v < TODAY) nv = TODAY;
+                    if (v > MAX_1Y) nv = MAX_1Y;
+                    if (nv !== v) {
+                      e.target.value = nv;
+                      setPhase1Form(p => ({ ...p, fecha_programada_entrega: nv }));
+                    }
+                  }}
                   disabled={phase1ReadOnly}
                   className="w-full rounded-md border border-gray-200 px-3 py-2 focus:border-gray-400 focus:outline-none"
+                  required
                 />
               </label>
               <label className="space-y-1 text-sm text-gray-700 md:col-span-2">
@@ -2782,6 +2801,16 @@ export default function AppointmentCreate() {
     </section>
   );
 
+  // Formatear BIRADS
+  const biradsSanitize = (v) => {
+    const d = v.replace(/\D/g, "").slice(0, 1);
+    if (!d) return "";
+    const n = Number(d);
+    if (n < 1) return "1";
+    if (n > 6) return "6";
+    return String(n);
+  };
+
   const renderLecturaStep = () => (
     <section className="grid gap-4 lg:grid-cols-[minmax(0,20rem)_1fr]">
       <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
@@ -2797,13 +2826,6 @@ export default function AppointmentCreate() {
             <dt className="font-medium">Servicio</dt>
             <dd>
               {selectedServiceName || currentCita?.servicio_nombre || "-"}
-            </dd>
-          </div>
-          <div>
-            <dt className="font-medium">Doctor que lee</dt>
-            <dd>
-              {`${selectedAppointmentDetails?.fase2?.doctor_nombre ?? ""} ${selectedAppointmentDetails?.fase2?.doctor_apellido ?? ""}`.trim() ||
-                "-"}
             </dd>
           </div>
         </dl>
@@ -2841,19 +2863,28 @@ export default function AppointmentCreate() {
               </label>
               {showBiradsField ? (
                 <label className="space-y-1 text-sm text-gray-700">
-                  <span>Clasificacion BIRADS</span>
+                  <span>Clasificacion BIRADS (1-6) *</span>
                   <input
                     name="birads"
+                    inputMode="numeric"
+                    pattern="^[1-6]$"
+                    maxLength={1}
+                    placeholder="1–6"
                     value={phase2Form.birads}
-                    onChange={(event) =>
-                      setPhase2Form((prev) => ({
-                        ...prev,
-                        birads: event.target.value,
-                      }))
+                    onChange={(e) =>
+                      setPhase2Form((p) => ({ ...p, birads: biradsSanitize(e.target.value) }))
                     }
+                    onBlur={(e) => {
+                      const v = biradsSanitize(e.target.value);
+                      if (v !== e.target.value) {
+                        e.target.value = v;
+                        setPhase2Form((p) => ({ ...p, birads: v }));
+                      }
+                    }}
                     disabled={phase2ReadOnly}
+                    autoComplete="off"
                     className="w-full rounded-md border border-gray-200 px-3 py-2 focus:border-gray-400 focus:outline-none"
-                    placeholder="Ej. BIRADS 2"
+                    required
                   />
                 </label>
               ) : null}
@@ -2874,6 +2905,23 @@ export default function AppointmentCreate() {
       </div>
     </section>
   );
+
+  // Formatear fecha de entrega
+  const MIN_1W = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    return toLocalISODate(d);
+  })();
+
+  // Formatear nombre completo
+  const limpiarNombre4Live = (v) => {
+    let s = v.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]/g, "").replace(/ {2,}/g, " ");
+    const trailing = s.endsWith(" ");
+    const parts = s.trim().split(" ").filter(Boolean);
+    if (parts.length > 4) s = parts.slice(0, 4).join(" ");
+    else s = parts.join(" ") + (trailing && parts.length < 4 ? " " : "");
+    return s;
+  };
 
   const renderEntregaStep = () => (
     <section className="grid gap-4 lg:grid-cols-[minmax(0,20rem)_1fr]">
@@ -2916,50 +2964,80 @@ export default function AppointmentCreate() {
           <form className="space-y-5" onSubmit={handlePhase3Submit}>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <label className="space-y-1 text-sm text-gray-700">
-                <span>Fecha de entrega</span>
+                <span>Fecha de entrega *</span>
                 <input
                   type="date"
                   name="fecha_entrega"
                   value={phase3Form.fecha_entrega ?? ""}
-                  onChange={(event) =>
-                    setPhase3Form((prev) => ({
-                      ...prev,
-                      fecha_entrega: event.target.value,
-                    }))
+                  min={MIN_1W}
+                  max={MAX_1Y}
+                  onChange={(e) =>
+                    setPhase3Form(p => ({ ...p, fecha_entrega: e.target.value }))
                   }
+                  onBlur={(e) => {
+                    const v = e.target.value; if (!v) return;
+                    let nv = v;
+                    if (v < MIN_1W) nv = MIN_1W;
+                    if (v > MAX_1Y) nv = MAX_1Y;
+                    if (nv !== v) {
+                      e.target.value = nv;
+                      setPhase3Form(p => ({ ...p, fecha_entrega: nv }));
+                    }
+                  }}
                   disabled={phase3ReadOnly}
                   className="w-full rounded-md border border-gray-200 px-3 py-2 focus:border-gray-400 focus:outline-none"
+                  required
                 />
               </label>
               <label className="space-y-1 text-sm text-gray-700">
-                <span>DUI de quien recibe</span>
+                <span>DUI de quien recibe *</span>
                 <input
                   name="dui"
+                  placeholder="00000000-0"
                   value={phase3Form.dui}
-                  onChange={(event) =>
-                    setPhase3Form((prev) => ({
-                      ...prev,
-                      dui: event.target.value,
-                    }))
-                  }
+                  inputMode="numeric"
+                  pattern="^\d{8}-\d$"
+                  maxLength={10}
+                  onChange={(e) => {
+                    const d = soloNumeros(e.target.value);
+                    const f = formatearDUI(d);
+                    setPhase3Form(p => ({ ...p, dui: f }));
+                  }}
                   disabled={phase3ReadOnly || phase3Form.retirada_por_usuario}
                   className="w-full rounded-md border border-gray-200 px-3 py-2 focus:border-gray-400 focus:outline-none"
+                  required
                 />
               </label>
               <label className="space-y-1 text-sm text-gray-700 md:col-span-2">
-                <span>Persona que recibe</span>
+                <span>Persona que recibe *</span>
                 <input
                   name="nombre"
+                  minLength={20}
+                  maxLength={80}
+                  inputMode="text"
+                  pattern="^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+( [A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+){3}$"
                   value={phase3Form.nombre}
-                  onChange={(event) =>
-                    setPhase3Form((prev) => ({
-                      ...prev,
-                      nombre: event.target.value,
-                    }))
+                  onChange={(e) =>
+                    setPhase3Form(p => ({ ...p, nombre: limpiarNombre4Live(e.target.value) }))
                   }
+                  onBlur={(e) => {
+                    const parts = e.target.value.trim().split(" ").filter(Boolean);
+                    if (parts.length !== 4) {
+                      e.target.setCustomValidity("Escribe exactamente 4 palabras (3 espacios).");
+                      e.target.reportValidity();
+                      return;
+                    }
+                    e.target.setCustomValidity("");
+                    const nv = titleCase(parts.join(" "));
+                    if (nv !== e.target.value) {
+                      e.target.value = nv;
+                      setPhase3Form(p => ({ ...p, nombre: nv }));
+                    }
+                  }}
                   disabled={phase3ReadOnly || phase3Form.retirada_por_usuario}
                   className="w-full rounded-md border border-gray-200 px-3 py-2 focus:border-gray-400 focus:outline-none"
                   placeholder="Nombre completo"
+                  required
                 />
               </label>
             </div>
