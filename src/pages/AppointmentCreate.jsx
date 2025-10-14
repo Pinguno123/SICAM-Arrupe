@@ -2453,7 +2453,7 @@ export default function AppointmentCreate() {
                     </select>
                   </label>
                   <label className="space-y-1 text-sm text-gray-700">
-                    <span>Contrato{contratoOptions.length > 1 ? " *" : ""}</span>
+                    <span>Contrato *{contratoOptions.length > 1 ? " *" : ""}</span>
                     <select
                       name="idContrato"
                       value={appointmentForm.idContrato}
@@ -2485,7 +2485,7 @@ export default function AppointmentCreate() {
                     </select>
                   </label>
                   <label className="space-y-1 text-sm text-gray-700">
-                    <span>Fase *</span>
+                    <span>Fase</span>
                     <select
                       name="idFase"
                       value={
@@ -2513,7 +2513,7 @@ export default function AppointmentCreate() {
                     </select>
                   </label>
                   <label className="space-y-1 text-sm text-gray-700">
-                    <span>Turno</span>
+                    <span>Turno *</span>
                     <select
                       name="idTurno"
                       value={appointmentForm.idTurno}
@@ -2525,6 +2525,7 @@ export default function AppointmentCreate() {
                       }
                       disabled={appointmentLocked || !appointmentForm.idContrato}
                       className="w-full rounded-md border border-gray-200 px-3 py-2 focus:border-gray-400 focus:outline-none"
+                      required
                     >
                       <option value="">Sin turno asignado</option>
                       {selectOptions.turnos.map((option) => (
@@ -2535,7 +2536,7 @@ export default function AppointmentCreate() {
                     </select>
                   </label>
                   <label className="space-y-1 text-sm text-gray-700">
-                    <span>Fecha de referencia</span>
+                    <span>Fecha de referencia *</span>
                     <input
                       type="date"
                       name="fecha_referencia"
@@ -2548,6 +2549,7 @@ export default function AppointmentCreate() {
                       }
                       disabled={appointmentLocked}
                       className="w-full rounded-md border border-gray-200 px-3 py-2 focus:border-gray-400 focus:outline-none"
+                      required
                     />
                   </label>
                   <label className="space-y-1 text-sm text-gray-700">
