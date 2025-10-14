@@ -2082,6 +2082,51 @@ export default function AppointmentCreate() {
       </button>
     );
   };
+
+  // Formatear Nombres y Apellidos
+  const limpiar2PalabrasLive = (v) => {
+    let s = v.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]/g, ""); // permite letras, tildes, ñ, espacio
+    s = s.replace(/ {2,}/g, " ");                         // colapsa espacios múltiples
+    const trailing = s.endsWith(" ");
+    const parts = s.trim().split(" ").filter(Boolean);
+    if (parts.length > 2) s = parts.slice(0, 2).join(" ") + (trailing ? " " : "");
+    return s; // NO trim al final para permitir espacio mientras escribe
+  };
+
+  const titleCase = (v) =>
+    v.replace(/\b([A-Za-zÁÉÍÓÚÜÑáéíóúüñ])([A-Za-zÁÉÍÓÚÜÑáéíóúüñ'’-]*)/g,
+      (_, a, b) => a.toUpperCase() + b.toLowerCase());
+
+  // Limitador de fechas
+  const toLocalISODate = (d = new Date()) => {
+    const tz = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - tz).toISOString().slice(0, 10);
+  };
+
+  const TODAY = toLocalISODate();
+
+  const MIN_120 = (() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 120); // mismo día y mes, 120 años atrás
+    return toLocalISODate(d);
+  })();
+
+  // Formatear DUI
+  const soloNumeros = (v) => v.replace(/\D/g, "").slice(0, 9);
+  const formatearDUI = (v) => (v.length <= 8 ? v : `${v.slice(0, 8)}-${v.slice(8)}`);
+
+  // Formatear No. de afiliación
+  const soloNumeros9 = (v) => v.replace(/\D/g, "").slice(0, 9);
+  const formatearAfiliacion = (d) => {
+    if (d.length <= 2) return d;
+    if (d.length <= 6) return `${d.slice(0, 2)}-${d.slice(2)}`;
+    return `${d.slice(0, 2)}-${d.slice(2, 6)}-${d.slice(6, 9)}`;
+  };
+
+  // Formatear Números de teléfono:
+  const soloNumeros8 = (v) => v.replace(/\D/g, "").slice(0, 8);
+  const formatearTel = (d) => (d.length <= 4 ? d : `${d.slice(0, 4)}-${d.slice(4)}`);
+
   const renderPatientStep = () => (
     <section className="grid gap-4 lg:grid-cols-[minmax(0,18rem)_1fr]">
       <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
@@ -2149,12 +2194,17 @@ export default function AppointmentCreate() {
                   <span>Nombre *</span>
                   <input
                     name="nombre"
+                    placeholder="Juan Carlos"
                     value={patientForm.nombre}
-                    onChange={(event) =>
-                      setPatientForm((prev) => ({
-                        ...prev,
-                        nombre: event.target.value,
-                      }))
+                    minLength={3}
+                    maxLength={60}
+                    inputMode="text"
+                    pattern="^(?=.{3,60}$)[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+(?: [A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)?$"
+                    onChange={(e) =>
+                      setPatientForm(p => ({ ...p, nombre: limpiar2PalabrasLive(e.target.value) }))
+                    }
+                    onBlur={(e) =>
+                      setPatientForm(p => ({ ...p, nombre: titleCase(e.target.value.trim()) }))
                     }
                     className="w-full rounded-md border border-gray-200 px-3 py-2 focus:border-gray-400 focus:outline-none"
                     required
@@ -2164,12 +2214,17 @@ export default function AppointmentCreate() {
                   <span>Apellido *</span>
                   <input
                     name="apellido"
+                    placeholder="Pérez Gomez"
                     value={patientForm.apellido}
-                    onChange={(event) =>
-                      setPatientForm((prev) => ({
-                        ...prev,
-                        apellido: event.target.value,
-                      }))
+                    minLength={3}
+                    maxLength={60}
+                    inputMode="text"
+                    pattern="^(?=.{3,60}$)[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+(?: [A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)?$"
+                    onChange={(e) =>
+                      setPatientForm(p => ({ ...p, apellido: limpiar2PalabrasLive(e.target.value) }))
+                    }
+                    onBlur={(e) =>
+                      setPatientForm(p => ({ ...p, apellido: titleCase(e.target.value.trim()) }))
                     }
                     className="w-full rounded-md border border-gray-200 px-3 py-2 focus:border-gray-400 focus:outline-none"
                     required
@@ -2199,27 +2254,33 @@ export default function AppointmentCreate() {
                   <input
                     type="date"
                     name="fecha_nacimiento"
-                    value={patientForm.fecha_nacimiento ?? ""}
-                    onChange={(event) =>
-                      setPatientForm((prev) => ({
-                        ...prev,
-                        fecha_nacimiento: event.target.value,
-                      }))
-                    }
+                    value={patientForm.fecha_nacimiento}
+                    min={MIN_120}
+                    max={TODAY}
+                    onChange={(e) => setPatientForm(p => ({ ...p, fecha_nacimiento: e.target.value }))}
+                    onBlur={(e) => {
+                      const v = e.target.value; if (!v) return;
+                      let nv = v; if (v > TODAY) nv = TODAY; if (v < MIN_120) nv = MIN_120;
+                      if (nv !== v) { e.target.value = nv; setPatientForm(p => ({ ...p, fecha_nacimiento: nv })); }
+                    }}
                     className="w-full rounded-md border border-gray-200 px-3 py-2 focus:border-gray-400 focus:outline-none"
+                    required
                   />
                 </label>
                 <label className="space-y-1 text-sm text-gray-700">
                   <span>DUI</span>
                   <input
                     name="dui"
+                    placeholder="00000000-0"
                     value={patientForm.dui}
-                    onChange={(event) =>
-                      setPatientForm((prev) => ({
-                        ...prev,
-                        dui: event.target.value,
-                      }))
-                    }
+                    maxLength={10}
+                    inputMode="numeric"
+                    pattern="^\d{8}-\d$"
+                    onChange={(e) => {
+                      const d = soloNumeros(e.target.value);
+                      const f = formatearDUI(d);
+                      setPatientForm(p => ({ ...p, dui: f }));
+                    }}
                     className="w-full rounded-md border border-gray-200 px-3 py-2 focus:border-gray-400 focus:outline-none"
                   />
                 </label>
@@ -2227,13 +2288,16 @@ export default function AppointmentCreate() {
                   <span>Numero de afiliacion</span>
                   <input
                     name="numero_afiliacion"
+                    placeholder="00-0000-000"
                     value={patientForm.numero_afiliacion}
-                    onChange={(event) =>
-                      setPatientForm((prev) => ({
-                        ...prev,
-                        numero_afiliacion: event.target.value,
-                      }))
-                    }
+                    maxLength={11}
+                    inputMode="numeric"
+                    pattern="^[0-9]{2}-[0-9]{4}-[0-9]{3}$"
+                    onChange={(e) => {
+                      const d = soloNumeros9(e.target.value);
+                      const f = formatearAfiliacion(d);
+                      setPatientForm(p => ({ ...p, numero_afiliacion: f }));
+                    }}
                     className="w-full rounded-md border border-gray-200 px-3 py-2 focus:border-gray-400 focus:outline-none"
                   />
                 </label>
@@ -2241,13 +2305,16 @@ export default function AppointmentCreate() {
                   <span>Telefono fijo</span>
                   <input
                     name="telefono_fijo"
+                    placeholder="0000-0000"
                     value={patientForm.telefono_fijo}
-                    onChange={(event) =>
-                      setPatientForm((prev) => ({
-                        ...prev,
-                        telefono_fijo: event.target.value,
-                      }))
-                    }
+                    maxLength={9}
+                    inputMode="numeric"
+                    pattern="^\d{4}-\d{4}$"
+                    onChange={(e) => {
+                      const d = soloNumeros8(e.target.value);
+                      const f = formatearTel(d);
+                      setPatientForm(p => ({ ...p, telefono_fijo: f }));
+                    }}
                     className="w-full rounded-md border border-gray-200 px-3 py-2 focus:border-gray-400 focus:outline-none"
                   />
                 </label>
@@ -2255,13 +2322,16 @@ export default function AppointmentCreate() {
                   <span>Telefono celular</span>
                   <input
                     name="telefono_celular"
+                    placeholder="0000-0000"
                     value={patientForm.telefono_celular}
-                    onChange={(event) =>
-                      setPatientForm((prev) => ({
-                        ...prev,
-                        telefono_celular: event.target.value,
-                      }))
-                    }
+                    maxLength={9}
+                    inputMode="numeric"
+                    pattern="^\d{4}-\d{4}$"
+                    onChange={(e) => {
+                      const d = soloNumeros8(e.target.value);
+                      const f = formatearTel(d);
+                      setPatientForm(p => ({ ...p, telefono_celular: f }));
+                    }}
                     className="w-full rounded-md border border-gray-200 px-3 py-2 focus:border-gray-400 focus:outline-none"
                   />
                 </label>

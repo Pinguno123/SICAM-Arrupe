@@ -90,6 +90,50 @@ function PatientForm({ mode, initialData = EMPTY_PATIENT, onSubmit, onCancel, su
     onSubmit(form);
   };
 
+  // Formatear Nombres y Apellidos
+  const limpiar2PalabrasLive = (v) => {
+    let s = v.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]/g, ""); // permite letras, tildes, ñ, espacio
+    s = s.replace(/ {2,}/g, " ");                         // colapsa espacios múltiples
+    const trailing = s.endsWith(" ");
+    const parts = s.trim().split(" ").filter(Boolean);
+    if (parts.length > 2) s = parts.slice(0, 2).join(" ") + (trailing ? " " : "");
+    return s; // NO trim al final para permitir espacio mientras escribe
+  };
+
+  const titleCase = (v) =>
+    v.replace(/\b([A-Za-zÁÉÍÓÚÜÑáéíóúüñ])([A-Za-zÁÉÍÓÚÜÑáéíóúüñ'’-]*)/g,
+      (_, a, b) => a.toUpperCase() + b.toLowerCase());
+
+  // Limitador de fechas
+  const toLocalISODate = (d = new Date()) => {
+    const tz = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - tz).toISOString().slice(0, 10);
+  };
+
+  const TODAY = toLocalISODate();
+
+  const MIN_120 = (() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 120); // mismo día y mes, 120 años atrás
+    return toLocalISODate(d);
+  })();
+
+  // Formatear DUI
+  const soloNumeros = (v) => v.replace(/\D/g, "").slice(0, 9);
+  const formatearDUI = (v) => (v.length <= 8 ? v : `${v.slice(0, 8)}-${v.slice(8)}`);
+
+  // Formatear No. de afiliación
+  const soloNumeros9 = (v) => v.replace(/\D/g, "").slice(0, 9);
+  const formatearAfiliacion = (d) => {
+    if (d.length <= 2) return d;
+    if (d.length <= 6) return `${d.slice(0, 2)}-${d.slice(2)}`;
+    return `${d.slice(0, 2)}-${d.slice(2, 6)}-${d.slice(6, 9)}`;
+  };
+
+  // Formatear Números de teléfono:
+  const soloNumeros8 = (v) => v.replace(/\D/g, "").slice(0, 8);
+  const formatearTel = (d) => (d.length <= 4 ? d : `${d.slice(0, 4)}-${d.slice(4)}`);
+
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
       <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl">
@@ -110,8 +154,21 @@ function PatientForm({ mode, initialData = EMPTY_PATIENT, onSubmit, onCancel, su
               <span>Nombre *</span>
               <input
                 name="nombre"
+                placeholder="Juan Carlos"
+                minLength={3}
+                maxLength={60}
+                inputMode="text"
+                autoComplete="given-name"
+                pattern="^(?=.{3,60}$)[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+(?: [A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)?$"
                 value={form.nombre}
-                onChange={handleChange}
+                onChange={(e) => {
+                  e.target.value = limpiar2PalabrasLive(e.target.value);
+                  handleChange(e);
+                }}
+                onBlur={(e) => {
+                  e.target.value = titleCase(e.target.value.trim());
+                  handleChange(e);
+                }}
                 className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
                 required
               />
@@ -120,14 +177,27 @@ function PatientForm({ mode, initialData = EMPTY_PATIENT, onSubmit, onCancel, su
               <span>Apellido *</span>
               <input
                 name="apellido"
-                value={form.apellido}
-                onChange={handleChange}
+                placeholder="Pérez Gómez"
+                minLength={3}
+                maxLength={60}
+                inputMode="text"
+                autoComplete="family-name"
+                pattern="^(?=.{3,60}$)[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+(?: [A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)?$"
+                value={form.apellido ?? ""}
+                onChange={(e) => {
+                  e.target.value = limpiar2PalabrasLive(e.target.value);
+                  handleChange(e);
+                }}
+                onBlur={(e) => {
+                  e.target.value = titleCase(e.target.value.trim());
+                  handleChange(e);
+                }}
                 className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
                 required
               />
             </label>
             <label className="space-y-1 text-sm text-gray-700">
-              <span>Genero</span>
+              <span>Género *</span>
               <select
                 name="genero"
                 value={form.genero ?? ""}
@@ -141,49 +211,102 @@ function PatientForm({ mode, initialData = EMPTY_PATIENT, onSubmit, onCancel, su
               </select>
             </label>
             <label className="space-y-1 text-sm text-gray-700">
-              <span>Fecha de nacimiento</span>
+              <span>Fecha de nacimiento *</span>
               <input
                 type="date"
                 name="fecha_nacimiento"
-                value={form.fecha_nacimiento ?? ""}
+                value={form.fecha_nacimiento || ""}
+                min={MIN_120}
                 max={TODAY}
                 onChange={handleChange}
+                onBlur={(e) => {
+                  const v = e.target.value;
+                  if (!v) return;
+                  let nv = v;
+                  if (v > TODAY) nv = TODAY;
+                  if (v < MIN_120) nv = MIN_120;
+                  if (nv !== v) { e.target.value = nv; handleChange(e); }
+                }}
                 className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
               />
             </label>
             <label className="space-y-1 text-sm text-gray-700">
-              <span>DUI</span>
+              <span>DUI *</span>
               <input
                 name="dui"
+                placeholder="00000000-0"
+                pattern="^[0-9]{8}-[0-9]$"
+                minLength={10}
+                maxLength={10}
+                autoComplete="off"
+                inputMode="numeric"
                 value={form.dui ?? ""}
-                onChange={handleChange}
+                onChange={(e) => {
+                  const d = soloNumeros(e.target.value);
+                  const f = formatearDUI(d);
+                  e.target.value = f;
+                  handleChange(e);
+                }}
                 className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
+                required
               />
             </label>
             <label className="space-y-1 text-sm text-gray-700">
-              <span>No. afiliacion</span>
+              <span>No. afiliación *</span>
               <input
                 name="numero_afiliacion"
+                placeholder="00-0000-000"
+                pattern="^[0-9]{2}-[0-9]{4}-[0-9]{3}$"
+                minLength={11}
+                maxLength={11}
+                inputMode="numeric"
+                autoComplete="off"
                 value={form.numero_afiliacion ?? ""}
-                onChange={handleChange}
+                onChange={(e) => {
+                  const d = soloNumeros9(e.target.value);
+                  const f = formatearAfiliacion(d);
+                  e.target.value = f;
+                  handleChange(e);
+                }}
                 className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
+                required
               />
             </label>
             <label className="space-y-1 text-sm text-gray-700">
-              <span>Telefono fijo</span>
+              <span>Teléfono fijo</span>
               <input
                 name="telefono_fijo"
+                placeholder="0000-0000"
+                pattern="^\d{4}-\d{4}$"
+                minLength={9}
+                maxLength={9}
+                autoComplete="off"
+                inputMode="numeric"
                 value={form.telefono_fijo ?? ""}
-                onChange={handleChange}
+                onChange={(e) => {
+                  const d = soloNumeros8(e.target.value);
+                  e.target.value = formatearTel(d);
+                  handleChange(e);
+                }}
                 className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
               />
             </label>
             <label className="space-y-1 text-sm text-gray-700">
-              <span>Telefono celular</span>
+              <span>Teléfono celular</span>
               <input
                 name="telefono_celular"
+                placeholder="0000-0000"
+                pattern="^\d{4}-\d{4}$"
+                minLength={9}
+                maxLength={9}
+                autoComplete="off"
+                inputMode="numeric"
                 value={form.telefono_celular ?? ""}
-                onChange={handleChange}
+                onChange={(e) => {
+                  const d = soloNumeros8(e.target.value);
+                  e.target.value = formatearTel(d);
+                  handleChange(e);
+                }}
                 className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
               />
             </label>
