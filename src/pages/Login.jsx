@@ -1,4 +1,5 @@
 ﻿import { useState } from "react";
+import clinicaBrand from "../assets/clinica-brand.png";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 
@@ -52,6 +53,7 @@ export default function Login() {
       <div className="w-full max-w-md space-y-6 rounded-2xl bg-white p-8 shadow-xl">
         <header className="space-y-2 text-center">
           <h1 className="text-2xl font-semibold text-gray-900">Acceso al sistema</h1>
+          <img src={clinicaBrand} alt="Clinica Arrupe" className="mx-auto h-32 w-auto" />
           <p className="text-sm text-gray-500">Ingresa tus credenciales para continuar.</p>
         </header>
 
@@ -113,3 +115,4 @@ export default function Login() {
     </div>
   );
 }
+

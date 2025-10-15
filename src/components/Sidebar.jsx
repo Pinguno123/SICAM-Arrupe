@@ -15,6 +15,7 @@ import {
   WrenchScrewdriverIcon,
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../context/AuthContext.jsx";
+import clinicaLogo from "../assets/clinica-logo.png";
 
 const DEFAULT_BRAND = { line1: "Control de Citas", line2: "y Mamografias" };
 
@@ -245,9 +246,12 @@ function SidebarComponent({
 
   return (
     <aside className="flex h-full w-64 flex-col border-r border-gray-100 bg-white">
-      <div className="p-5 text-xl font-extrabold leading-5 text-gray-900">
-        <div>{brand?.line1 ?? DEFAULT_BRAND.line1}</div>
-        <div>{brand?.line2 ?? DEFAULT_BRAND.line2}</div>
+      <div className="flex flex-col items-start gap-3 p-5 text-xl font-extrabold leading-5 text-gray-900">
+        <img src={clinicaLogo} alt="Clinica Arrupe" className="mx-4 h-32 w-auto" />
+        <div>
+          <div>{brand?.line1 ?? DEFAULT_BRAND.line1}</div>
+          <div>{brand?.line2 ?? DEFAULT_BRAND.line2}</div>
+        </div>
       </div>
 
       <nav className="flex-1 space-y-2 overflow-y-auto pb-6">
@@ -283,3 +287,5 @@ function SidebarComponent({
 }
 
 export default memo(SidebarComponent);
+
+
