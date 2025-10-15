@@ -21,8 +21,7 @@ export async function listContractCenters(options = {}) {
 // Crea una relacion contrato-centro validando datos minimos.
 export async function createContractCenter(data, options = {}) {
   const payload = mapContractCenterToApi(data);
-  delete payload.centroAtencionId;
-  if (!payload.contrato?.id || !payload.centroAtencion?.id) {
+  if (payload.contratoId == null || payload.centroAtencionId == null) {
     throw new Error("createContractCenter: contrato y centro son obligatorios");
   }
   const { signal } = options;

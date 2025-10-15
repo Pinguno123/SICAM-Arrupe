@@ -88,18 +88,17 @@ export function mapContractCenterToApi(data, { active = true } = {}) {
   }
 
   const contratoId = toId(data.contratoId ?? data.idContrato ?? data.contrato?.id);
-  const centroId = toId(data.centroId ?? data.idCentroAtencion ?? data.centroAtencion?.id ?? data.idCentro);
+  const centroId = toId(
+    data.centroAtencionId ?? data.centroId ?? data.idCentroAtencion ?? data.centroAtencion?.id ?? data.idCentro,
+  );
 
   const payload = {};
 
   if (contratoId !== null) {
-    payload.contrato = { id: contratoId };
     payload.contratoId = contratoId;
   }
 
   if (centroId !== null) {
-    payload.centroAtencion = { id: centroId };
-    payload.centroId = centroId;
     payload.centroAtencionId = centroId;
   }
 

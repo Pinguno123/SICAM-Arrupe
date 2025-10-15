@@ -113,7 +113,7 @@ export default function Contracts() {
     setSubmitting(true);
     try {
       if (isEditing) {
-        const { contract } = await updateContract(editing.idContrato, { nombre });
+        const { contract } = await updateContract(editing.idContrato, { codigo: nombre });
         if (contract) {
           setContracts((prev) =>
             prev.map((item) => (item.idContrato === contract.idContrato ? contract : item)),
