@@ -168,6 +168,25 @@ export default function Centers() {
     }
   };
 
+  // Title Case
+  const titleCase = (v) =>
+    v.replace(/\b([A-Za-zÁÉÍÓÚÜÑáéíóúüñ])([A-Za-zÁÉÍÓÚÜÑáéíóúüñ]*)/g,
+      (_, a, b) => a.toUpperCase() + b.toLowerCase());
+
+  // Máx. N palabras, solo letras + espacio. No símbolos.
+  const limpiarNPalabrasLive = (v, max = 4) => {
+    let s = v.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]/g, "").replace(/ {2,}/g, " ");
+    const trailing = s.endsWith(" ");
+    const parts = s.trim().split(" ").filter(Boolean);
+    if (parts.length > max) s = parts.slice(0, max).join(" ");
+    else s = parts.join(" ") + (trailing && parts.length < max ? " " : "");
+    return s;
+  };
+
+  // Texto básico para "Nombre" del centro: letras, números y espacio.
+  const limpiarCentroLive = (v) =>
+    v.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ]/g, "").replace(/ {2,}/g, " ");
+
   return (
     <div className="flex flex-col gap-6">
       <header className="space-y-1">
@@ -180,52 +199,82 @@ export default function Centers() {
       <section className="grid gap-4 lg:grid-cols-[24rem_1fr]">
         <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-900">{isEditing ? "Editar centro" : "Nuevo centro"}</h2>
-          <p className="mt-1 text-sm text-gray-500">El nombre es obligatorio. Los demás campos son opcionales.</p>
+          <p className="mt-1 text-sm text-gray-500">Todos los campos son obligatorios.</p>
 
           <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-1">
-              <label htmlFor="nombre" className="text-sm font-medium text-gray-700">
-                Nombre *
-              </label>
+              <label htmlFor="nombre" className="text-sm font-medium text-gray-700">Nombre *</label>
               <input
                 id="nombre"
                 name="nombre"
-                value={form.nombre}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
                 placeholder="Centro principal"
+                value={form.nombre ?? ""}
+                minLength={3}
+                maxLength={60}
+                inputMode="text"
+                pattern="^(?=.{3,60}$)[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]+(?: [A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]+)*$"
+                onChange={(e) => {
+                  e.target.value = limpiarCentroLive(e.target.value);
+                  handleChange(e);
+                }}
+                onBlur={(e) => {
+                  const v = e.target.value.trim();
+                  e.target.value = v;
+                  handleChange(e);
+                }}
                 disabled={submitting}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
                 required
               />
             </div>
 
             <div className="space-y-1">
-              <label htmlFor="administrador" className="text-sm font-medium text-gray-700">
-                Administrador
-              </label>
+              <label htmlFor="administrador" className="text-sm font-medium text-gray-700">Administrador *</label>
               <input
                 id="administrador"
                 name="administrador"
-                value={form.administrador}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
                 placeholder="Nombre del administrador"
+                value={form.administrador ?? ""}
+                minLength={3}
+                maxLength={60}
+                inputMode="text"
+                pattern="^(?=.{3,60}$)[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+(?: [A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+){0,3}$"
+                onChange={(e) => {
+                  e.target.value = limpiarNPalabrasLive(e.target.value, 4);
+                  handleChange(e);
+                }}
+                onBlur={(e) => {
+                  e.target.value = titleCase(e.target.value.trim());
+                  handleChange(e);
+                }}
                 disabled={submitting}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
+                required
               />
             </div>
 
             <div className="space-y-1">
-              <label htmlFor="director" className="text-sm font-medium text-gray-700">
-                Director
-              </label>
+              <label htmlFor="director" className="text-sm font-medium text-gray-700">Director *</label>
               <input
                 id="director"
                 name="director"
-                value={form.director}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
                 placeholder="Nombre del director"
+                value={form.director ?? ""}
+                minLength={3}
+                maxLength={60}
+                inputMode="text"
+                pattern="^(?=.{3,60}$)[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+(?: [A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+){0,3}$"
+                onChange={(e) => {
+                  e.target.value = limpiarNPalabrasLive(e.target.value, 4);
+                  handleChange(e);
+                }}
+                onBlur={(e) => {
+                  e.target.value = titleCase(e.target.value.trim());
+                  handleChange(e);
+                }}
                 disabled={submitting}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
+                required
               />
             </div>
 

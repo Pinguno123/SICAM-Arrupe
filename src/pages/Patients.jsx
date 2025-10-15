@@ -91,14 +91,27 @@ function PatientForm({ mode, initialData = EMPTY_PATIENT, onSubmit, onCancel, su
   };
 
   // Formatear Nombres y Apellidos
-  const limpiar2PalabrasLive = (v) => {
-    let s = v.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]/g, ""); // permite letras, tildes, ñ, espacio
-    s = s.replace(/ {2,}/g, " ");                         // colapsa espacios múltiples
+  const PARTICULAS = ["de", "del", "la", "las", "los", "y"];
+
+  const limpiarCompuestoLive = (v, max = 4) => {
+    let s = v.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]/g, "").replace(/ {2,}/g, " ");
     const trailing = s.endsWith(" ");
-    const parts = s.trim().split(" ").filter(Boolean);
-    if (parts.length > 2) s = parts.slice(0, 2).join(" ") + (trailing ? " " : "");
-    return s; // NO trim al final para permitir espacio mientras escribe
+    const parts = s.trim().split(" ").filter(Boolean).slice(0, max);
+    return parts.join(" ") + (trailing && parts.length < max ? " " : "");
   };
+
+  const titleCaseConParticulas = (v) =>
+    v
+      .trim()
+      .split(/\s+/)
+      .map((w, i) => {
+        const wl = w.toLowerCase();
+        if (i > 0 && PARTICULAS.includes(wl)) return wl;
+        // Capitaliza otras palabras
+        const [a, ...r] = wl;
+        return (a ? a.toUpperCase() : "") + r.join("");
+      })
+      .join(" ");
 
   const titleCase = (v) =>
     v.replace(/\b([A-Za-zÁÉÍÓÚÜÑáéíóúüñ])([A-Za-zÁÉÍÓÚÜÑáéíóúüñ'’-]*)/g,
@@ -150,48 +163,41 @@ function PatientForm({ mode, initialData = EMPTY_PATIENT, onSubmit, onCancel, su
           {error ? <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p> : null}
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {/* Nombre */}
             <label className="space-y-1 text-sm text-gray-700">
               <span>Nombre *</span>
               <input
                 name="nombre"
-                placeholder="Juan Carlos"
+                placeholder="Patricia del Carmen"
                 minLength={3}
                 maxLength={60}
                 inputMode="text"
-                autoComplete="given-name"
-                pattern="^(?=.{3,60}$)[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+(?: [A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)?$"
-                value={form.nombre}
-                onChange={(e) => {
-                  e.target.value = limpiar2PalabrasLive(e.target.value);
-                  handleChange(e);
-                }}
-                onBlur={(e) => {
-                  e.target.value = titleCase(e.target.value.trim());
-                  handleChange(e);
-                }}
+                value={form.nombre ?? ""}
+                pattern={
+                  "^(?=.{3,60}$)[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+(?: (?:de|del|la|las|los|y) [A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+| [A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+){0,3}$"
+                }
+                onChange={(e) => { e.target.value = limpiarCompuestoLive(e.target.value, 4); handleChange(e); }}
+                onBlur={(e) => { e.target.value = titleCaseConParticulas(e.target.value); handleChange(e); }}
                 className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
                 required
               />
             </label>
+
+            {/* Apellido */}
             <label className="space-y-1 text-sm text-gray-700">
               <span>Apellido *</span>
               <input
                 name="apellido"
-                placeholder="Pérez Gómez"
+                placeholder="Rosa de Mendez"
                 minLength={3}
                 maxLength={60}
                 inputMode="text"
-                autoComplete="family-name"
-                pattern="^(?=.{3,60}$)[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+(?: [A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)?$"
                 value={form.apellido ?? ""}
-                onChange={(e) => {
-                  e.target.value = limpiar2PalabrasLive(e.target.value);
-                  handleChange(e);
-                }}
-                onBlur={(e) => {
-                  e.target.value = titleCase(e.target.value.trim());
-                  handleChange(e);
-                }}
+                pattern={
+                  "^(?=.{3,60}$)[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+(?: (?:de|del|la|las|los|y) [A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+| [A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+){0,3}$"
+                }
+                onChange={(e) => { e.target.value = limpiarCompuestoLive(e.target.value, 4); handleChange(e); }}
+                onBlur={(e) => { e.target.value = titleCaseConParticulas(e.target.value); handleChange(e); }}
                 className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
                 required
               />
@@ -228,6 +234,7 @@ function PatientForm({ mode, initialData = EMPTY_PATIENT, onSubmit, onCancel, su
                   if (nv !== v) { e.target.value = nv; handleChange(e); }
                 }}
                 className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
+                required
               />
             </label>
             <label className="space-y-1 text-sm text-gray-700">

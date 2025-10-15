@@ -51,7 +51,7 @@ function App() {
                 <Patients />
               </ProtectedRoute>
             )}
-        />
+          />
           <Route
             path="procedimientos/agendar"
             element={(
@@ -129,14 +129,14 @@ function App() {
               </ProtectedRoute>
             )}
           />
-          <Route
+          {/* <Route
             path="mantenimiento/catalogos"
             element={(
               <ProtectedRoute required={["*"]}>
                 <Placeholder title="Catalogos" description="Pantalla pendiente de implementar." />
               </ProtectedRoute>
             )}
-          />
+          /> */}
           <Route
             path="admin/roles"
             element={(

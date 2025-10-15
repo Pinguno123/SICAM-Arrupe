@@ -38,10 +38,10 @@ function App() {
             path="mantenimiento/usuarios"
             element={<Placeholder title="Usuarios" description="Pantalla pendiente de implementar." />}
           />
-          <Route
+          {/* <Route
             path="mantenimiento/catalogos"
             element={<Placeholder title="Catalogos" description="Pantalla pendiente de implementar." />}
-          />
+          /> */}
           <Route
             path="admin/roles"
             element={<Placeholder title="Roles" description="Pantalla pendiente de implementar." />}

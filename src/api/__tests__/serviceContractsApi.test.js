@@ -89,8 +89,8 @@ describe("serviceContractsApi", () => {
     const [url, options] = apiClient.post.mock.calls[0];
     expect(url).toMatch(/\/api\/servicio-contratos$/);
     expect(options.data).toEqual({
-      contratoCentroAtencion: { id: 42 },
-      servicio: { id: 3 },
+      contratoCentroAtencionId: 42,
+      servicioId: 3,
       cantidad: 20,
     });
     expect(serviceContract).toMatchObject({ contratoCentroAtencionId: 42, servicioId: 3, cantidad: 20 });
@@ -114,7 +114,7 @@ describe("serviceContractsApi", () => {
     const [url, options] = apiClient.patch.mock.calls[0];
     expect(url).toMatch(/\/api\/servicio-contratos\/11$/);
     expect(options.data).toEqual({
-      contratoCentroAtencion: { id: 42 },
+      contratoCentroAtencionId: 42,
       cantidad: 25,
     });
     expect(serviceContract).toMatchObject({ idServicioContrato: 11, contratoCentroAtencionId: 42, cantidad: 25 });

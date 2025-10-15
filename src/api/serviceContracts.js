@@ -125,38 +125,29 @@ export function mapServiceContractToApi(data) {
   if (!data || typeof data !== "object") {
     return {};
   }
-  const payload = {}
-
-  const contractCenterId = toId(
-    data.contractCenterId ??
-      data.contratoCentroAtencionId ??
-      data.contratoCentroAtencion?.id ??
-      data.contratoCentroId ??
-      null,
-  );
-  if (contractCenterId !== null) {
-    payload.contratoCentroAtencion = { id: contractCenterId };
-    payload.contratoCentroAtencionId = contractCenterId;
-    payload.contratoCentroId = contractCenterId;
-  }
-
-  const servicioId = toId(data.servicioId ?? data.idServicio ?? data.servicio?.id);
-  if (servicioId !== null) {
-    payload.servicio = { id: servicioId };
-    payload.servicioId = servicioId;
-    payload.idServicio = servicioId;
-  }
-
-  const contratoId = toId(data.contratoId ?? data.contractId ?? data.contrato?.id);
-  if (contratoId !== null) {
-    payload.contrato = { id: contratoId };
-    payload.contratoId = contratoId;
-  }
-
-  const cantidad = toQuantity(data.cantidad ?? data.quantity ?? data.numeroEstudios);
-  if (cantidad !== null) {
-    payload.cantidad = cantidad;
-  }
-
+
+  const payload = {};
+
+  const contractCenterId = toId(
+    data.contractCenterId ??
+      data.contratoCentroAtencionId ??
+      data.contratoCentroAtencion?.id ??
+      data.contratoCentroId ??
+      null,
+  );
+  if (contractCenterId !== null) {
+    payload.contratoCentroAtencionId = contractCenterId;
+  }
+
+  const servicioId = toId(data.servicioId ?? data.idServicio ?? data.servicio?.id);
+  if (servicioId !== null) {
+    payload.servicioId = servicioId;
+  }
+
+  const cantidad = toQuantity(data.cantidad ?? data.quantity ?? data.numeroEstudios);
+  if (cantidad !== null) {
+    payload.cantidad = cantidad;
+  }
+
   return payload;
 }

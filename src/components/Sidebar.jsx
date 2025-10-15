@@ -87,13 +87,13 @@ export const DEFAULT_SECTIONS = [
         icon: UsersIcon,
         required: ["*"],
       },
-      {
-        id: "mantenimiento-catalogos",
-        label: "Catalogos",
-        path: "/mantenimiento/catalogos",
-        icon: QueueListIcon,
-        required: ["*"],
-      },
+      // {
+      //   id: "mantenimiento-catalogos",
+      //   label: "Catalogos",
+      //   path: "/mantenimiento/catalogos",
+      //   icon: QueueListIcon,
+      //   required: ["*"],
+      // },
     ],
   },
 ];

@@ -112,6 +112,10 @@ const PHASE_ALIAS_LOOKUP = (() => {
   return map;
 })();
 
+function isAppointmentConfirmed(value) {
+  return value === 1 || value === true || value === "1";
+}
+
 function resolvePhaseMappings(phases) {
   const flow = { ...DEFAULT_PHASE_FLOW };
   let precitaId = "";
@@ -842,6 +846,28 @@ export default function AppointmentCreate() {
       setPatientsLoading(false);
     }
   }, [canAccessPatientData, notify]);
+  const currentCita = selectedAppointmentDetails?.cita ?? null;
+  const appointmentConfirmed = currentCita
+    ? isAppointmentConfirmed(currentCita.confirmada)
+    : Boolean(appointmentForm.confirmada);
+  const appointmentFinalized =
+    (selectedAppointmentDetails?.cita?.idFase ?? 0) >= phaseFlow.entrega;
+  const appointmentLocked = Boolean(
+    appointmentFinalized ||
+    appointmentStageLocked ||
+    (selectedAppointmentId ? appointmentConfirmed : false),
+  );
+  useEffect(() => {
+    if (!appointmentConfirmed) {
+      return;
+    }
+    setAppointmentForm((prev) => {
+      if (prev.confirmada) {
+        return prev;
+      }
+      return { ...prev, confirmada: true };
+    });
+  }, [appointmentConfirmed]);
   const loadAppointments = useCallback(
     async (patientId) => {
       if (!patientId) return [];
@@ -913,8 +939,23 @@ export default function AppointmentCreate() {
           notify("error", "No se pudo cargar la cita seleccionada");
           return;
         }
-        setSelectedAppointmentDetails(details);
-        const cita = details.cita ?? {};
+        const backendCita = details.cita ?? {};
+        const backendConfirmed = isAppointmentConfirmed(backendCita.confirmada);
+        const resolvedConfirmed = appointmentConfirmed || backendConfirmed;
+        const normalizedCita = {
+          ...backendCita,
+          confirmada: resolvedConfirmed
+            ? isAppointmentConfirmed(backendCita.confirmada)
+              ? backendCita.confirmada
+              : 1
+            : backendCita.confirmada,
+        };
+        const normalizedDetails = {
+          ...details,
+          cita: normalizedCita,
+        };
+        setSelectedAppointmentDetails(normalizedDetails);
+        const cita = normalizedDetails.cita ?? {};
         const citaRaw = cita.raw ?? {};
         const resolvedId = pickFirst(
           cita.idCita,
@@ -1106,7 +1147,7 @@ export default function AppointmentCreate() {
           idTurno: turnoIdRaw != null ? String(turnoIdRaw) : "",
           fecha_referencia: fechaReferencia,
           medico_referido: medicoReferido,
-          confirmada: Boolean(cita.confirmada),
+          confirmada: resolvedConfirmed,
         });
         const fase1 = details.fase1 ?? {};
         setPhase1Form({
@@ -1158,11 +1199,7 @@ export default function AppointmentCreate() {
             fase3.nombre ||
             fase3.dui),
         );
-        const appointmentAlreadyConfirmed = Boolean(
-          cita.confirmada === 1 ||
-          cita.confirmada === true ||
-          cita.confirmada === "1",
-        );
+        const appointmentAlreadyConfirmed = resolvedConfirmed;
         const reachedRegistro = phaseValue >= phaseFlow.registro;
         const reachedLectura = phaseValue >= phaseFlow.lectura;
         const reachedEntrega = phaseValue >= phaseFlow.entrega;
@@ -1184,7 +1221,7 @@ export default function AppointmentCreate() {
         setDetailsLoading(false);
       }
     },
-    [notify, resetFormsForNewAppointment, phaseFlow, precitaPhaseId, serviceNameById],
+    [notify, resetFormsForNewAppointment, phaseFlow, precitaPhaseId, serviceNameById, appointmentConfirmed],
   );
   useEffect(() => {
     loadCatalogs();
@@ -1501,17 +1538,7 @@ export default function AppointmentCreate() {
       (field) => normalizedPatientForm[field] !== patientBaseline[field],
     );
   }, [normalizedPatientForm, patientBaseline, selectedPatientId]);
-  const currentCita = selectedAppointmentDetails?.cita ?? null;
-  const appointmentConfirmed = currentCita
-    ? currentCita.confirmada === 1 || currentCita.confirmada === true
-    : appointmentForm.confirmada;
-  const appointmentFinalized =
-    (selectedAppointmentDetails?.cita?.idFase ?? 0) >= phaseFlow.entrega;
-  const appointmentLocked = Boolean(
-    appointmentFinalized ||
-    appointmentStageLocked ||
-    (selectedAppointmentId ? appointmentConfirmed : false),
-  );
+
   const selectedServiceOption = useMemo(() => {
     if (!servicioOptions.length) {
       return null;
@@ -1721,13 +1748,8 @@ export default function AppointmentCreate() {
       await notify("error", "No se pudo determinar la fase Precita");
       return;
     }
-    const confirming = Boolean(appointmentForm.confirmada);
-    const wasPreviouslyConfirmed = Boolean(
-      currentCita &&
-      (currentCita.confirmada === 1 ||
-        currentCita.confirmada === true ||
-        currentCita.confirmada === "1"),
-    );
+    const wasPreviouslyConfirmed = isAppointmentConfirmed(currentCita?.confirmada);
+    const confirming = Boolean(appointmentForm.confirmada || wasPreviouslyConfirmed);
     let resolvedPhaseNumeric = basePhaseNumeric;
     if (confirming) {
       const minimumPhase = toNumericId(phaseFlow.cita);
@@ -1756,7 +1778,7 @@ export default function AppointmentCreate() {
         doctorTurnoId: toNumericId(appointmentForm.idTurno),
         faseId: resolvedPhaseNumeric,
         fechaReferencia,
-        confirmada: Boolean(appointmentForm.confirmada),
+        confirmada: confirming,
       };
 
       const wantedServicioId = toId(appointmentForm.idServicio);

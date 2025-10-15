@@ -158,6 +158,22 @@ export default function Contracts() {
     }
   };
 
+  // helpers
+  const codeLive = (v) => {
+    const L = v.replace(/[^A-Za-z]/g, "").toUpperCase().slice(0, 4);
+    const N = v.replace(/\D/g, "").slice(0, 3);
+    if (!L) return "";
+    if (L.length < 4) return L;
+    return `${L}-${N}`;
+  };
+
+  const codeBlur = (v) => {
+    const L = v.replace(/[^A-Za-z]/g, "").toUpperCase().slice(0, 4);
+    if (L.length !== 4) return null;
+    const N = v.replace(/\D/g, "").slice(0, 3);
+    return `${L}-${N.padStart(3, "0")}`;
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <header className="space-y-1">
@@ -176,18 +192,25 @@ export default function Contracts() {
 
           <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-1">
-              <label htmlFor="nombre" className="text-sm font-medium text-gray-700">
-                Nombre *
-              </label>
+              <label htmlFor="nombre" className="text-sm font-medium text-gray-700">Nombre *</label>
               <input
                 id="nombre"
                 name="nombre"
-                value={form.nombre}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
-                placeholder="Contrato global 2025"
+                placeholder="ABCD-001"
+                value={form.nombre ?? ""}
+                maxLength={8}
+                inputMode="text"
+                pattern="^[A-Z]{4}-\d{3}$"
+                onChange={(e) => { e.target.value = codeLive(e.target.value); handleChange(e); }}
+                onBlur={(e) => {
+                  const nv = codeBlur(e.target.value);
+                  if (!nv) { e.target.setCustomValidity("Usa 4 letras y 3 números: AAAA-000"); e.target.reportValidity(); return; }
+                  e.target.setCustomValidity(""); if (nv !== e.target.value) { e.target.value = nv; handleChange(e); }
+                }}
                 disabled={submitting}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
                 required
+                autoComplete="off"
               />
             </div>
 

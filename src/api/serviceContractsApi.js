@@ -21,18 +21,22 @@ export async function listServiceContracts(options = {}) {
 // Crea una relacion servicio-contrato despues de validar los campos criticos.
 export async function createServiceContract(data, options = {}) {
   const payload = mapServiceContractToApi(data);
-  delete payload.contratoCentroAtencionId;
-  delete payload.contratoCentroId;
-  delete payload.servicioId;
-  delete payload.idServicio;
-  if (!payload.contratoCentroAtencion?.id || !payload.servicio?.id) {
-    throw new Error("createServiceContract: contrato y servicio son obligatorios");
+  if (payload.contratoCentroAtencionId == null) {
+    throw new Error("createServiceContract: contratoCentroAtencionId es obligatorio");
+  }
+  if (payload.servicioId == null) {
+    throw new Error("createServiceContract: servicioId es obligatorio");
   }
   if (payload.cantidad === null || payload.cantidad === undefined) {
     throw new Error("createServiceContract: cantidad es obligatoria");
   }
+  const requestPayload = {
+    contratoCentroAtencionId: payload.contratoCentroAtencionId,
+    servicioId: payload.servicioId,
+    cantidad: payload.cantidad,
+  };
   const { signal } = options;
-  const response = await apiClient.post(SERVICE_CONTRACTS_URL, { data: payload, signal });
+  const response = await apiClient.post(SERVICE_CONTRACTS_URL, { data: requestPayload, signal });
   return {
     serviceContract: mapServiceContractFromApi(response),
     raw: response,
@@ -43,12 +47,22 @@ export async function createServiceContract(data, options = {}) {
 export async function updateServiceContract(id, data, options = {}) {
   ensureId(id, "updateServiceContract", "id is required");
   const payload = mapServiceContractToApi(data);
-  delete payload.contratoCentroAtencionId;
-  delete payload.contratoCentroId;
-  delete payload.servicioId;
-  delete payload.idServicio;
+  if (
+    payload.contratoCentroAtencionId == null &&
+    payload.servicioId == null &&
+    payload.cantidad == null
+  ) {
+    throw new Error("updateServiceContract: no se proporcionaron campos para actualizar");
+  }
+  const requestPayload = {
+    ...(payload.contratoCentroAtencionId != null && {
+      contratoCentroAtencionId: payload.contratoCentroAtencionId,
+    }),
+    ...(payload.servicioId != null && { servicioId: payload.servicioId }),
+    ...(payload.cantidad != null && { cantidad: payload.cantidad }),
+  };
   const { signal } = options;
-  const response = await apiClient.patch(resolveServiceContractUrl(id), { data: payload, signal });
+  const response = await apiClient.patch(resolveServiceContractUrl(id), { data: requestPayload, signal });
   return {
     serviceContract: mapServiceContractFromApi(response),
     raw: response,
@@ -61,3 +75,5 @@ export async function deleteServiceContract(id, options = {}) {
   const { signal } = options;
   await apiClient.delete(resolveServiceContractUrl(id), { signal });
 }
+
+// Elimina un servicio contratado mediante la URL construida de forma centralizada.

@@ -58,7 +58,7 @@ export async function updateService(serviceId, data, options = {}) {
   }
   const payload = mapServiceToApi(data);
   const { signal } = options;
-  const response = await apiClient.put(resolveServiceUrl(serviceId), {
+  const response = await apiClient.patch(resolveServiceUrl(serviceId), {
     data: payload,
     signal,
   });

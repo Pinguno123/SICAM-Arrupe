@@ -237,6 +237,37 @@ function UserForm({ mode, initialData = EMPTY_FORM, roles, onSubmit, onCancel, s
     await onSubmit(payload);
   };
 
+  // Formateo del formulario
+  const PARTICULAS = ["de", "del", "la", "las", "los", "y"];
+
+  const limpiarCompuestoLive = (v, max = 4) => {
+    let s = v.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]/g, "").replace(/ {2,}/g, " ");
+    const trailing = s.endsWith(" ");
+    const parts = s.trim().split(" ").filter(Boolean).slice(0, max);
+    return parts.join(" ") + (trailing && parts.length < max ? " " : "");
+  };
+
+  const titleCaseConParticulas = (v) =>
+    v.trim().split(/\s+/).map((w, i) => {
+      const wl = w.toLowerCase();
+      if (i > 0 && PARTICULAS.includes(wl)) return wl;
+      return wl.charAt(0).toUpperCase() + wl.slice(1);
+    }).join(" ");
+
+  const telLive = (v) => {
+    const d = v.replace(/\D/g, "").slice(0, 8);
+    return d.length <= 4 ? d : `${d.slice(0, 4)}-${d.slice(4)}`;
+  };
+
+  const usernameLive = (v) => {
+    let s = v.toLowerCase().replace(/[^a-z0-9._-]/g, "");
+    s = s.replace(/[._-]{2,}/g, m => m[0]);           // sin repetidos
+    s = s.replace(/^[._-]+|[._-]+$/g, "");            // no extremos
+    return s.slice(0, 20);
+  };
+
+  const PASSWORD_RE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,64}$/;
+
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
       <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl">
@@ -252,42 +283,66 @@ function UserForm({ mode, initialData = EMPTY_FORM, roles, onSubmit, onCancel, s
           {!validationError && error ? <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p> : null}
 
           <div className="grid gap-4 md:grid-cols-2">
+            {/* Usuario */}
             <label className="space-y-1 text-sm text-gray-700">
               <span>Usuario *</span>
               <input
                 name="username"
-                value={form.username}
-                onChange={handleChange}
-                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
-                placeholder="usuario"
+                placeholder="Username"
+                value={form.username ?? ""}
+                inputMode="text"
+                maxLength={20}
+                pattern="^(?=.{3,20}$)[a-z](?:[a-z0-9._-]*[a-z0-9])?$"
+                title="3–20 chars, minúsculas, números, . _ -, empieza y termina con letra/número"
+                onChange={(e) => { e.target.value = usernameLive(e.target.value); handleChange(e); }}
                 disabled={submitting}
+                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
                 required
               />
             </label>
 
+            {/* Contraseña */}
             <label className="space-y-1 text-sm text-gray-700">
               <span>{mode === "edit" ? "Contraseña (opcional)" : "Contraseña *"}</span>
               <input
                 type="password"
                 name="password"
-                value={form.password}
-                onChange={handleChange}
-                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
+                value={form.password ?? ""}
+                autoComplete={mode === "edit" ? "current-password" : "new-password"}
+                maxLength={64}
                 placeholder={mode === "edit" ? "Dejar en blanco para mantener" : "Contraseña segura"}
+                onChange={(e) => {
+                  e.target.value = e.target.value.slice(0, 64);
+                  handleChange(e);
+                }}
+                onBlur={(e) => {
+                  const v = e.target.value;
+                  if (mode !== "edit" && v && !PASSWORD_RE.test(v)) {
+                    e.target.setCustomValidity("8–64, mayúscula, minúscula, número y símbolo.");
+                    e.target.reportValidity();
+                    return;
+                  }
+                  e.target.setCustomValidity("");
+                }}
                 disabled={submitting}
-                {...(mode === "edit" ? {} : { required: true })}
+                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
               />
+
             </label>
 
             <label className="space-y-1 text-sm text-gray-700">
               <span>Nombre</span>
               <input
                 name="nombre"
-                value={form.nombre}
-                onChange={handleChange}
-                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
-                placeholder="Nombre"
+                placeholder="Patricia del Carmen"
+                value={form.nombre ?? ""}
+                minLength={3}
+                maxLength={60}
+                pattern="^(?=.{3,60}$)[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+(?: (?:de|del|la|las|los|y) [A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+| [A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+){0,3}$"
+                onChange={(e) => { e.target.value = limpiarCompuestoLive(e.target.value, 4); handleChange(e); }}
+                onBlur={(e) => { e.target.value = titleCaseConParticulas(e.target.value); handleChange(e); }}
                 disabled={submitting}
+                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
               />
             </label>
 
@@ -295,11 +350,15 @@ function UserForm({ mode, initialData = EMPTY_FORM, roles, onSubmit, onCancel, s
               <span>Apellido</span>
               <input
                 name="apellido"
-                value={form.apellido}
-                onChange={handleChange}
-                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
-                placeholder="Apellido"
+                placeholder="Rosa de Mendez"
+                value={form.apellido ?? ""}
+                minLength={3}
+                maxLength={60}
+                pattern="^(?=.{3,60}$)[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+(?: (?:de|del|la|las|los|y) [A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+| [A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+){0,3}$"
+                onChange={(e) => { e.target.value = limpiarCompuestoLive(e.target.value, 4); handleChange(e); }}
+                onBlur={(e) => { e.target.value = titleCaseConParticulas(e.target.value); handleChange(e); }}
                 disabled={submitting}
+                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
               />
             </label>
 
@@ -307,30 +366,35 @@ function UserForm({ mode, initialData = EMPTY_FORM, roles, onSubmit, onCancel, s
               <span>Telefono</span>
               <input
                 name="telefono"
-                value={form.telefono}
-                onChange={handleChange}
-                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
                 placeholder="0000-0000"
+                value={form.telefono ?? ""}
+                inputMode="numeric"
+                maxLength={9}
+                pattern="^[0-9]{4}-[0-9]{4}$"
+                onChange={(e) => {
+                  const d = e.target.value.replace(/\D/g, "").slice(0, 8);
+                  e.target.value = d.length <= 4 ? d : `${d.slice(0, 4)}-${d.slice(4)}`;
+                  handleChange(e);
+                }}
                 disabled={submitting}
+                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
               />
             </label>
 
-
+            {/* Rol */}
             <label className="space-y-1 text-sm text-gray-700 md:col-span-2">
               <span>Rol *</span>
               <select
                 name="rolId"
                 value={form.rolId}
                 onChange={handleChange}
-                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
                 disabled={submitting || roleOptions.length === 0}
+                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
                 required
               >
                 <option value="">Selecciona un rol</option>
-                {roleOptions.map((option) => (
-                  <option key={option.value || option.label} value={option.value}>
-                    {option.label}
-                  </option>
+                {roleOptions.map(o => (
+                  <option key={o.value || o.label} value={o.value}>{o.label}</option>
                 ))}
               </select>
               {roleOptions.length === 0 ? (

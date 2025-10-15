@@ -297,7 +297,7 @@ export default function ContractSetup() {
 
     const duplicate = contractCentersForContract.some((item) => item.centroId === centroId);
     if (duplicate) {
-      setFeedback("El Centro ya est� asociado al contrato");
+      setFeedback("El Centro ya está asociado al contrato");
       return;
     }
 
@@ -361,7 +361,7 @@ export default function ContractSetup() {
 
     const duplicate = serviceContractsForContract.some((item) => item.servicioId === serviceId && item.contractCenterId === contractCenterId);
     if (!isEditing && duplicate) {
-      setFeedback("El servicio ya est� asociado a este Centro en el contrato");
+      setFeedback("El servicio ya está asociado a este Centro en el contrato");
       return;
     }
 
@@ -452,18 +452,27 @@ export default function ContractSetup() {
     label: item.centroNombre,
   }));
 
+  // Formatear cantidad de contratos
+  const quantityLive = (v) => v.replace(/\D/g, "").slice(0, 4);
+  const quantityBlur = (v) => {
+    const n = Number(v.replace(/\D/g, ""));
+    if (!n || n < 1) return "1";
+    if (n > 9999) return "9999";
+    return String(n);
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold text-gray-900">Armar contratos</h1>
         <p className="text-sm text-gray-600">
-          Selecciona un contrato para vincular Centros de atenci�n y servicios con su cantidad incluida.
+          Selecciona un contrato para vincular Centros de atención y servicios con su cantidad incluida.
         </p>
       </header>
 
       {loading ? (
         <div className="rounded-xl border border-gray-100 bg-white p-6 text-sm text-gray-600 shadow-sm">
-          Cargando informaci�n...
+          Cargando información...
         </div>
       ) : error ? (
         <div className="rounded-xl border border-red-100 bg-red-50 p-6 text-sm text-red-600 shadow-sm">
@@ -502,7 +511,7 @@ export default function ContractSetup() {
             <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-semibold text-gray-900">Centros vinculados</h2>
               <p className="mt-1 text-sm text-gray-500">
-                Asocia Centros de atenci�n al contrato seleccionado. No se permiten duplicados.
+                Asocia Centros de atención al contrato seleccionado. No se permiten duplicados.
               </p>
 
               <form className="mt-4 space-y-3" onSubmit={handleCenterSubmit}>
@@ -569,7 +578,7 @@ export default function ContractSetup() {
             <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-semibold text-gray-900">Servicios contratados</h2>
               <p className="mt-1 text-sm text-gray-500">
-                Define los servicios incluidos y la cantidad de estudios. El precio base del cat�logo se muestra autom�ticamente.
+                Define los servicios incluidos y la cantidad de estudios. El precio base del catálogo se muestra automáticamente.
               </p>
 
               <form className="mt-4 space-y-3" onSubmit={handleServiceSubmit}>
@@ -612,13 +621,24 @@ export default function ContractSetup() {
 
                 <input
                   name="quantity"
-                  value={serviceForm.quantity}
-                  onChange={(event) => setServiceForm((prev) => ({ ...prev, quantity: event.target.value }))}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
-                  placeholder="Cantidad de estudios"
+                  type="text"
+                  value={serviceForm.quantity ?? ""}
                   inputMode="numeric"
-                  disabled={!selectedContractId || submittingService}
+                  maxLength={4}
+                  pattern="^[1-9][0-9]{0,3}$"
+                  onChange={(e) =>
+                    setServiceForm(p => ({ ...p, quantity: e.target.value.replace(/\D/g, "").slice(0, 4) }))
+                  }
+                  onBlur={(e) => {
+                    let n = Number(e.target.value || 0);
+                    if (n < 1) n = 1;
+                    if (n > 9999) n = 9999;
+                    const s = String(n);
+                    if (s !== e.target.value) { e.target.value = s; setServiceForm(p => ({ ...p, quantity: s })); }
+                  }}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
                   required
+                  autoComplete="off"
                 />
 
                 <div className="flex items-center gap-2">

@@ -189,6 +189,26 @@ export default function Services() {
     }
   };
 
+  //Formatear formulario
+
+  const limpiarServicioLive = (v) =>
+    v.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ]/g, "").replace(/ {2,}/g, " ");
+
+  const precioLive = (v) => {
+    let s = String(v).replace(",", ".").replace(/[^0-9.]/g, "");
+    const parts = s.split(".");
+    const int = (parts[0] || "").replace(/^0+(?=\d)/, "").slice(0, 9);
+    const dec = parts.slice(1).join("").slice(0, 2);
+    if (s.endsWith(".") && dec.length === 0) return int ? `${int}.` : "0.";
+    return dec ? `${int || "0"}.${dec}` : int;
+  };
+
+  const precioBlur = (v) => {
+    const n = Number(String(v).replace(",", "."));
+    if (!isFinite(n) || n <= 0) return "";
+    return n.toFixed(2);
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <header className="space-y-1">
@@ -203,34 +223,48 @@ export default function Services() {
 
           <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-1">
-              <label htmlFor="nombre" className="text-sm font-medium text-gray-700">
-                Nombre *
-              </label>
+              <label htmlFor="nombre" className="text-sm font-medium text-gray-700">Nombre *</label>
               <input
                 id="nombre"
                 name="nombre"
-                value={form.nombre}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
                 placeholder="Consulta general"
+                value={form.nombre ?? ""}
+                minLength={3}
+                maxLength={60}
+                inputMode="text"
+                pattern="^(?=.{3,60}$)[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]+(?: [A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]+)*$"
+                onChange={(e) => { e.target.value = limpiarServicioLive(e.target.value); handleChange(e); }}
+                onBlur={(e) => { e.target.value = e.target.value.trim(); handleChange(e); }}
                 disabled={submitting}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
                 required
               />
             </div>
 
             <div className="space-y-1">
-              <label htmlFor="precio" className="text-sm font-medium text-gray-700">
-                Precio *
-              </label>
+              <label htmlFor="precio" className="text-sm font-medium text-gray-700">Precio *</label>
               <input
                 id="precio"
                 name="precio"
-                value={form.precio}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
                 placeholder="0.00"
+                value={form.precio ?? ""}
                 inputMode="decimal"
+                maxLength={12}
+                pattern="^(?!0+(?:\.0{1,2})?$)\d+(?:\.\d{0,2})?$"  /* > 0, hasta 2 decimales */
+                onChange={(e) => { e.target.value = precioLive(e.target.value); handleChange(e); }}
+                onBlur={(e) => {
+                  const nv = precioBlur(e.target.value);
+                  if (!nv) {
+                    e.target.setCustomValidity("Ingresa un monto > 0 con hasta 2 decimales.");
+                    e.target.reportValidity();
+                    return;
+                  }
+                  e.target.setCustomValidity("");
+                  if (nv !== e.target.value) { e.target.value = nv; handleChange(e); }
+                }}
                 disabled={submitting}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
+                autoComplete="off"
                 required
               />
             </div>
